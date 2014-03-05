@@ -9,6 +9,7 @@ import std.uni : toUpper;
 
 import std.logger;
 
+import stack;
 import dropuntil;
 import xmltokenrange;
 
@@ -60,15 +61,27 @@ void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 	string curObject = "this";
 	string curProperty;
 	bool translateable;
+	Stack!string objStack;
+
 	foreach(it; i.drop(1)) {
-		logF("%s ", it.kind);
+		logF("%s %s", it.kind, it.kind == XmlTokenKind.Open || it.kind ==
+				XmlTokenKind.Close ? it.name : "");
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
 			curObject = it["id"];
+			o.formattedWrite("\t\t%s.add(this.%s);\n", objStack.top(),
+				curObject
+			);
 		} else if(it.kind == XmlTokenKind.Open && it.name == "property") {
 			curProperty = it["name"];
 			if(curProperty == "label" && "translatable" in it.attributes) {
 				translateable = it["translatable"] == "yes";
 			}
+		} else if(it.kind == XmlTokenKind.Open && it.name == "child") {
+			objStack.push(curObject);
+			logF("stack open size %u", objStack.length);
+		} else if(it.kind == XmlTokenKind.Close && it.name == "child") {
+			objStack.pop();
+			logF("stack close size %u", objStack.length);
 		} else if(it.kind == XmlTokenKind.Text) {
 			if(it.data == "True" || it.data == "False") {
 				o.formattedWrite("\t\t%s.set%s();\n", curObject,

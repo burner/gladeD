@@ -242,11 +242,11 @@ public:
 		this.line = l;
 		this.kind = this.getKind();
 		if(this.kind == XmlTokenKind.Open || this.kind ==
-				XmlTokenKind.OpenClose) {
+				XmlTokenKind.OpenClose || this.kind == XmlTokenKind.Close) {
 			this.readName();
 		}
 		if(this.kind == XmlTokenKind.Open || this.kind ==
-				XmlTokenKind.OpenClose) {
+				XmlTokenKind.OpenClose || this.kind == XmlTokenKind.Close) {
 			this.readAttributes();
 		}
 	}
@@ -265,15 +265,21 @@ private:
 	XmlTokenKind getKind() {
 		assert(this.data.length);
 		if(this.data[0] != '<') {
+			this.data.popFront();
 			return XmlTokenKind.Text;
 		} else if(this.data[0] == '<') {
-			if(this.data[1] == '/') {
+			this.data.popFront();
+			if(this.data[0] == '/') {
+				this.data.popFront();
 				return XmlTokenKind.Close;
-			} else if(this.data[1] == '!') {
+			} else if(this.data[0] == '!') {
+				this.data.popFront();
 				return XmlTokenKind.Comment;
-			} else if(this.data[1] == '?') {
+			} else if(this.data[0] == '?') {
+				this.data.popFront();
 				return XmlTokenKind.Type;
-			} else if(this.data[$-2] == '/') {
+			} else if(this.data.length > 1 && this.data[$-2] == '/') {
+				this.data.popFront();
 				return XmlTokenKind.OpenClose;
 			} else {
 				return XmlTokenKind.Open;
@@ -284,7 +290,7 @@ private:
 
 	ptrdiff_t readNameBeginIdx() pure {
 		if(this.data.length > 0) {
-			return this.data[1 .. $].stripLeftIdx()+1;
+			return this.data.stripLeftIdx();
 		} else {
 			return 0;
 		}
@@ -462,6 +468,12 @@ unittest {
 	string testString = "<hello>";
 	auto r = xmlTokenRange(testString);
 	assert(r.front.name == "hello", r.front.name);
+}
+
+unittest {
+	string testString = "</hello>";
+	auto r = xmlTokenRange(testString);
+	assert(r.front.name == "hello", "\"" ~ r.front.name ~ "\"");
 }
 
 unittest {
