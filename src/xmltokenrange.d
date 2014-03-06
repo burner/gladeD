@@ -12,11 +12,12 @@ import std.range : isInputRange, lockstep;
 import std.format : format;
 import std.string : stripLeft, stripRight, indexOf, CaseSensitive, strip;
 import std.regex : ctRegex, match, regex, matchAll, popFrontN;
-import std.traits : isSomeChar;
+import std.traits : isSomeChar, isAssociativeArray;
 import std.functional : binaryFun;
 import std.algorithm : min;
 
 import std.logger;
+import fixedsizehashmap;
 
 ptrdiff_t stripLeftIdx(C)(C[] str) @safe pure 
 {
@@ -225,6 +226,27 @@ unittest {
 	assert(input.empty, "\"" ~ input ~ "\"");
 }
 
+version(XML_AA) {
+void insert(T,K,V)(ref T t, K k, V v) @trusted 
+		if(isAssociativeArray!T) {
+	t[k] = v;
+}
+
+bool contains(T,K)(ref T t, K k) @trusted nothrow 
+		if(isAssociativeArray!T) {
+	return (k in t) !is null;
+}
+} else {
+bool contains(T,K)(ref T t, K k) @trusted nothrow  {
+	return t.contains(k);
+}
+
+void insert(T,K,V)(ref T t, K k, V v) @trusted {
+	t.insert(k,v);
+}
+}
+
+
 enum XmlTokenKind {
 	Invalid,
 	OpenClose,
@@ -240,6 +262,10 @@ public:
 	this(string d, size_t l) {
 		this.data = d;
 		this.line = l;
+		if(this.data.length == 0) {
+			this.kind = XmlTokenKind.Invalid;
+			return;
+		}
 		this.kind = this.getKind();
 		if(this.kind == XmlTokenKind.Open || this.kind ==
 				XmlTokenKind.OpenClose || this.kind == XmlTokenKind.Close) {
@@ -252,18 +278,26 @@ public:
 	}
 
 	ref string opIndex(string key) {
-		return this.attributes[key];
+		version(XML_AA) {
+			return this.attributes[key];
+		} else {
+			return this.attributes[key].value;
+		}
 	}
 
 	string name;
-	string[string] attributes;
 	XmlTokenKind kind = XmlTokenKind.Invalid;
+	version(XML_AA) {
+		string[string] attributes;
+	} else {
+		FashMap!(string,string) attributes;
+	}
 	string data;
 	size_t line;
 
 private:
 	XmlTokenKind getKind() {
-		assert(this.data.length);
+		assert(this.data.length, format("no data at line %u", this.line));
 		if(this.data[0] != '<') {
 			this.data.popFront();
 			return XmlTokenKind.Text;
@@ -337,7 +371,11 @@ private:
 			eatWhitespace(this.data);
 			string attri = eatAttri(this.data);
 			eatWhitespace(this.data);
-			this.attributes[key] = attri;
+			version(XML_AA) {
+				this.attributes[key] = attri;
+			} else {
+				insert(this.attributes, key, attri);
+			}
 		}
 	}
 

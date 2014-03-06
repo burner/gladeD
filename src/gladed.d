@@ -82,7 +82,8 @@ void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 			logF("stack close size %u", objStack.length);
 		} else if(it.kind == XmlTokenKind.Open && it.name == "property") {
 			curProperty = it["name"];
-			if(curProperty == "label" && "translatable" in it.attributes) {
+			if(curProperty == "label" && it.attributes.contains("translatable")) 
+			{
 				translateable = it["translatable"] == "yes";
 			}
 		} else if(it.kind == XmlTokenKind.Open && it.name == "child") {
@@ -116,7 +117,7 @@ void main() {
 	string input = cast(string)read("test1.glade");
 	auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 
-		a.name == "object" && "class" in a.attributes && 
+		a.name == "object" && a.attributes.contains("class") && 
 		(a["class"] == "GtkWindow")
 	);
 
@@ -133,6 +134,8 @@ void main() {
 		logF("%s %s %s", it.name, it["class"], it["id"]);
 	}
 
+	log();
+
 	auto of = File("output.d", "w");
 	auto ofr = of.lockingTextWriter();
 
@@ -140,6 +143,7 @@ void main() {
 	string className = "SomeClass";
 
 	ofr.formattedWrite("module %s;\n\n", moduleName);
+	log();
 
 	auto names = elem.data.map!(a => a["class"]);
 	auto usedTypes = names.array.sort.uniq;
@@ -147,9 +151,12 @@ void main() {
 		ofr.formattedWrite("import gtk.%s;\n", it[3 .. $]);
 	}
 
+	logF("%u ", clsType.attributes.length);
+
 	ofr.formattedWrite("\nabstract class %s : %s {\n", className,
 		clsType["class"]
 	);
 
+	log();
 	createObjects(ofr, payLoad);
 }
