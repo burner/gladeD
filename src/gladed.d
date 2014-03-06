@@ -90,9 +90,18 @@ void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 			logF("stack open size %u", objStack.length);
 		} else if(it.kind == XmlTokenKind.Close && it.name == "child") {
 		} else if(it.kind == XmlTokenKind.Text) {
-			if(it.data == "True" || it.data == "False") {
-				o.formattedWrite("\t\t%s.set%s();\n", curObject,
-					underscoreCap(curProperty)
+			logF("%s", it.data);
+			if(curProperty == "label") {
+				log();
+				o.formattedWrite("\t\t%s.set%s(\"%s\");\n", curObject,
+					underscoreCap(curProperty), 
+					it.data
+				);
+			} else if(it.data == "True" || it.data == "False") {
+				log();
+				o.formattedWrite("\t\t%s.set%s(%s);\n", curObject,
+					underscoreCap(curProperty), 
+					it.data == "True" ? "true" : "false"
 				);
 			}
 		}

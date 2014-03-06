@@ -2,6 +2,7 @@ module fixedsizehashmap;
 
 import std.algorithm : sort;
 import std.range : isRandomAccessRange;
+import std.conv : to;
 
 struct FashMap(K,V,const size_t cap = 64) {
 	struct Pair(N,M) {
@@ -15,12 +16,12 @@ struct FashMap(K,V,const size_t cap = 64) {
 	}
 
 private:
-	size_t search(K key) const @safe nothrow {
-		int imax = this.length - 1;
-		int imin = 0;
+	size_t search(K key) const @trusted nothrow {
+		long imax = (this.length - cast(size_t)1);
+		long imin = 0;
 		while(imin <= imax) {
 			// calculate the midpoint for roughly equal partition
-			int imid = imin + ((imax - imin) / 2);
+			long imid = imin + ((imax - imin) / 2);
 			if(data[imid].key == key) {
 				// key found at index imid
 				return cast(size_t)imid; 

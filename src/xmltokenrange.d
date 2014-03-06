@@ -299,7 +299,6 @@ private:
 	XmlTokenKind getKind() {
 		assert(this.data.length, format("no data at line %u", this.line));
 		if(this.data[0] != '<') {
-			this.data.popFront();
 			return XmlTokenKind.Text;
 		} else if(this.data[0] == '<') {
 			this.data.popFront();
@@ -390,6 +389,7 @@ public:
 
 	@property void input(InputRange i) {
 		input_ = i;
+		this.store_.clear();
 		this.readFromRange();
 	}
 
@@ -500,6 +500,12 @@ unittest {
 
 unittest {
 	static assert(isInputRange!(XmlTokenRange!string));
+}
+
+unittest {
+	string testString = "hello";
+	auto r = xmlTokenRange(testString);
+	assert(r.front.data == "hello", r.front.data);
 }
 
 unittest {
