@@ -57,29 +57,103 @@ unittest {
 	assert(to!string(sm) == "HelloWorld", to!string(sm));
 }
 
+enum BinType {
+	Invalid,
+	Box,
+	Notebook
+}
+
+struct Obj {
+	BinType type;
+	string obj;
+	string cls;
+
+	static Obj opCall(string o, string c) {
+		Obj ret;
+		ret.obj = o;
+		ret.cls = c;
+		switch(c) {
+			case "GtkNotebook":
+				ret.type = BinType.Notebook;
+				break;
+			default:
+				ret.type = BinType.Box;
+		}
+		return ret;
+	}
+
+	string toAddFunction() pure @safe nothrow {
+		final switch(this.type) {
+			case BinType.Invalid: return "INVALID_BIN_TYPE";
+			case BinType.Box: return "add";
+			case BinType.Notebook: return "appendPage";
+		}
+	}
+
+	string toName() pure @safe nothrow {
+		if(this.obj == "placeholder") {
+			return "new HBox()";
+		} else {
+			return this.obj;
+		}
+	}
+}
+
 void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 	string curObject = "this";
 	string curProperty;
 	bool translateable;
-	Stack!string objStack;
+	bool notebook = false;
+	bool dontCloseObject = false;
+	Stack!Obj objStack;
 
 	foreach(it; i.drop(1)) {
-		logF("%s %s %s", it.kind, it.kind == XmlTokenKind.Open || it.kind ==
-			XmlTokenKind.Close ? it.name : "", !objStack.empty ?
-			objStack.top() : ""
+		infoF("%s %s %s", it.kind, it.kind == XmlTokenKind.Open || it.kind ==
+			XmlTokenKind.Close || it.kind == XmlTokenKind.OpenClose ? 
+			it.name : "", !objStack.empty ? objStack.top().obj : ""
 		);
-		if(it.kind == XmlTokenKind.Open && it.name == "object") {
-			curObject = it["id"];
-			if(!objStack.empty) {
-				o.formattedWrite("\t\t%s.add(this.%s);\n", objStack.top(),
-					curObject
-				);
+		if(it.kind == XmlTokenKind.Open && it.name == "object" ||
+				it.kind == XmlTokenKind.OpenClose && it.name == "placeholder") {
+
+			bool placeHolder = false;
+			if(it.kind == XmlTokenKind.OpenClose && it.name == "placeholder") {
+				warning();
+				placeHolder = true;
 			}
-			objStack.push(curObject);
-			logF("stack open size %u", objStack.length);
+
+			curObject = it["id"];
+			if(notebook) {
+				Obj widget;
+				if(!placeHolder) {
+			   		widget = objStack.top();
+					objStack.pop();
+				} else {
+					widget = Obj("placeholder", "GtkHBox");
+				}
+				o.formattedWrite("\t\t%s.%s(this.%s, this.%s);\n", 
+					objStack.top().obj, objStack.top().toAddFunction(), 
+					widget.obj, curObject
+				);
+				notebook = false;
+				dontCloseObject = false;
+			} else if(!objStack.empty) {
+				if(objStack.top().type != BinType.Notebook) {
+					o.formattedWrite("\t\t%s.%s(this.%s);\n",
+						objStack.top().toName(),
+						objStack.top().toAddFunction(), curObject
+					);
+				} else {
+					notebook = true;
+					dontCloseObject = true;
+				}
+			}
+			objStack.push(Obj(curObject, it["class"]));
+			traceF("stack open size %u", objStack.length);
 		} else if(it.kind == XmlTokenKind.Close && it.name == "object") {
-			objStack.pop();
-			logF("stack close size %u", objStack.length);
+			if(!dontCloseObject) {
+				objStack.pop();
+				traceF("stack close size %u", objStack.length);
+			}
 		} else if(it.kind == XmlTokenKind.Open && it.name == "property") {
 			curProperty = it["name"];
 			if(curProperty == "label" && it.attributes.contains("translatable")) 
@@ -87,18 +161,18 @@ void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 				translateable = it["translatable"] == "yes";
 			}
 		} else if(it.kind == XmlTokenKind.Open && it.name == "child") {
-			logF("stack open size %u", objStack.length);
+			traceF("stack open size %u", objStack.length);
 		} else if(it.kind == XmlTokenKind.Close && it.name == "child") {
 		} else if(it.kind == XmlTokenKind.Text) {
-			logF("%s", it.data);
+			traceF("%s", it.data);
 			if(curProperty == "label") {
-				log();
+				trace();
 				o.formattedWrite("\t\t%s.set%s(\"%s\");\n", curObject,
 					underscoreCap(curProperty), 
 					it.data
 				);
 			} else if(it.data == "True" || it.data == "False") {
-				log();
+				trace();
 				o.formattedWrite("\t\t%s.set%s(%s);\n", curObject,
 					underscoreCap(curProperty), 
 					it.data == "True" ? "true" : "false"
@@ -123,6 +197,7 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i) {
 }
 
 void main() {
+	LogManager.globalLogLevel = LogLevel.info;
 	string input = cast(string)read("test1.glade");
 	auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 

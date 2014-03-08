@@ -199,7 +199,12 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkButton" id="button2">
+                    <property name="label" translatable="yes">button</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                  </object>
                 </child>
                 <child type="tab">
                   <object class="GtkLabel" id="label1">
