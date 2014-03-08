@@ -6,89 +6,13 @@ import std.array : appender, Appender;
 import std.range : drop;
 import std.format : formattedWrite, format;
 import std.uni : toUpper;
+import std.xml;
 
 import std.logger;
 
 import stack;
 import dropuntil;
 import xmltokenrange;
-
-/*
-		if(it.kind == XmlTokenKind.Open && (it.name == "object" ||
-				it.name == "placeholder")) {
-
-			bool placeHolder = false;
-			if(it.kind == XmlTokenKind.OpenClose && it.name == "placeholder") {
-				warning();
-				placeHolder = true;
-				continue;
-			}
-
-			assert(it.has("id"), it.name);
-			curObject = it["id"];
-			if(notebook) {
-				warning();
-				Obj widget;
-				warningF("%b %s", placeHolder, it.name);
-				if(!placeHolder) {
-			   		widget = objStack.top();
-					objStack.pop();
-				} else {
-					widget = Obj("placeholder", "GtkHBox");
-				}
-				o.formattedWrite("\t\t%s.%s(this.%s, this.%s);\n", 
-					objStack.top().obj, objStack.top().toAddFunction(), 
-					widget.obj, curObject
-				);
-				notebook = false;
-				dontCloseObject = false;
-			} else if(!objStack.empty) {
-				if(objStack.top().type != BinType.Notebook) {
-					o.formattedWrite("\t\t%s.%s(this.%s);\n",
-						objStack.top().toName(),
-						objStack.top().toAddFunction(), curObject
-					);
-				} else {
-					warning();
-					notebook = true;
-					dontCloseObject = true;
-				}
-			}
-			assert(it.has("class"));
-			objStack.push(Obj(curObject, it["class"]));
-			traceF("stack open size %u", objStack.length);
-		} else if(it.kind == XmlTokenKind.Close && it.name == "object") {
-			if(!dontCloseObject) {
-				objStack.pop();
-				traceF("stack close size %u", objStack.length);
-			}
-		} else if(it.kind == XmlTokenKind.Open && it.name == "property") {
-			curProperty = it["name"];
-			if(curProperty == "label" && it.has("translatable")) 
-			{
-				assert(it.has("translatable"));
-				translateable = it["translatable"] == "yes";
-			}
-		} else if(it.kind == XmlTokenKind.Open && it.name == "child") {
-			traceF("stack open size %u", objStack.length);
-		} else if(it.kind == XmlTokenKind.Close && it.name == "child") {
-		} else if(it.kind == XmlTokenKind.Text) {
-			traceF("%s", it.data);
-			if(curProperty == "label") {
-				trace();
-				o.formattedWrite("\t\t%s.set%s(\"%s\");\n", curObject,
-					underscoreCap(curProperty), 
-					it.data
-				);
-			} else if(it.data == "True" || it.data == "False") {
-				trace();
-				o.formattedWrite("\t\t%s.set%s(%s);\n", curObject,
-					underscoreCap(curProperty), 
-					it.data == "True" ? "true" : "false"
-				);
-			}
-		}
-*/
 
 struct UnderscoreCap {
 	string data;
@@ -179,47 +103,79 @@ struct Obj {
 void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 	string curProperty;
 	bool translateable;
-	bool notebook = false;
-	bool dontCloseObject = false;
 	Stack!Obj objStack;
 	objStack.push(Obj("this", "GtkWindow"));
 	Stack!Obj childStack;
 
 	foreach(it; i.drop(1)) {
-		infoF("%s %s %s", it.kind, it.kind == XmlTokenKind.Open || it.kind ==
+		infoF(false, "%s %s %s", it.kind, it.kind == XmlTokenKind.Open || it.kind ==
 			XmlTokenKind.Close || it.kind == XmlTokenKind.OpenClose ? 
 			it.name : "", !objStack.empty ? objStack.top().obj : ""
 		);
 
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
-			traceF("%s %s", it.name, it["class"]);
+			infoF("%s %s", it.name, it["class"]);
 			objStack.push(Obj(it["id"], it["class"]));
-		} else if(it.kind == XmlTokenKind.Close && it.name == "object") {
-			traceF("%s %s", objStack.top().obj, objStack.top().cls);
-			assert(!objStack.empty);
-			objStack.pop();
-		} else if(it.kind == XmlTokenKind.Close && it.name == "child") {
-			traceF("%s %s", objStack.top().obj, objStack.top().cls);
-			assert(!objStack.empty);
-			auto w = objStack.top();
-			if(objStack.top().cls != "GtkNotebook") {
-				o.formattedWrite("\t\t%s.add(this.%s);\n", objStack.top().obj,
-					w.obj
-				);
-			} else if(childStack.empty()) {
-				childStack.push(w);
-			} else if(childStack.length == 1) {
-				assert(!childStack.empty);
-				auto l = childStack.top();
-				childStack.pop();
-				o.formattedWrite("\t\t%s.add(this.%s, this.%s);\n", 
-					objStack.top().obj, w.obj, l.obj
-				);
+		} else if(it.kind == XmlTokenKind.Close && it.name == "object" ||
+				it.kind == XmlTokenKind.OpenClose && it.name == "placeholder") {
+			Obj ob;
+			if(it.kind == XmlTokenKind.Close && it.name == "object") {
+				infoF("%s %s", objStack.top().obj, objStack.top().cls);
+				assert(!objStack.empty());
+				ob = objStack.top();
+				objStack.pop();
+				if(ob.obj == "this") {
+					break;
+				}
 			} else {
-				info("Not sure here");
+				info("Placeholder");
+				ob = Obj("new Box()", "GtkBox");
+			}
+			assert(!objStack.empty());
+			infoF("%s %s %u", objStack.top().obj, objStack.top().cls,
+				childStack.length
+			);
+			if(objStack.top().cls == "GtkNotebook") {
+				if(!childStack.empty()) {
+					auto ob2 = childStack.top();
+					childStack.pop();
+					o.formattedWrite("\t\t%s.appendPage(%s, this.%s);\n\n", 
+						objStack.top().obj, ob2.obj, ob.obj
+					);
+				} else {
+					childStack.push(ob);
+				}
+			} else {
+				assert(!objStack.empty());
+				o.formattedWrite("\t\t%s.add(this.%s);\n\n", 
+					objStack.top().obj, ob.obj
+				);
+			}
+		} else if(it.kind == XmlTokenKind.Open && it.name == "property") {
+			curProperty = it["name"];
+		} else if(it.kind == XmlTokenKind.Text) {
+			if(it.data == "False" || it.data == "True") {
+				o.formattedWrite("\t\t%s.set%s(%s);\n", objStack.top().obj,
+					underscoreCap(curProperty), it.data == "True" ? "true" :
+					"false"
+				);
 			}
 		}
 	}
+}
+
+string getBoxOrientation(IRange)(IRange i) {
+	foreach(it; i) {
+		infoF(it.kind == XmlTokenKind.Text, "%s %b", it.data, it.data ==
+				"vertical");
+		if(it.kind == XmlTokenKind.Text && it.data == "vertical") {
+			info();
+			return it.data;
+		} else if(it.kind == XmlTokenKind.Text && it.data == "horizontal") {
+			return it.data;
+		}
+	}
+	assert(false);
 }
 
 void createObjects(ORange,IRange)(ref ORange o, IRange i) {
@@ -228,6 +184,17 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
 			assert(it.has("id"));
 			assert(it.has("class"));
+			if(it["class"] == "GtkBox") {
+				if(k == "vertical") {
+					o.formattedWrite("\t\tthis.%s = new %s();\n", it["id"], 
+						"VBox"
+					);
+				} else {
+					o.formattedWrite("\t\tthis.%s = new %s();\n", it["id"], 
+						"HBox"
+					);
+				}
+			}
 			o.formattedWrite("\t\tthis.%s = new %s();\n", it["id"], 
 				it["class"][3 .. $]
 			);
@@ -236,12 +203,14 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i) {
 	o.formattedWrite("\n");
 	setupObjects(o, i);
 	o.formattedWrite("\t}\n\n");
+	o.formattedWrite("}\n");
 }
 
 void main() {
 	LogManager.globalLogLevel = LogLevel.trace;
 	string input = cast(string)read("test1.glade");
-	auto tokenRange = input.xmlTokenRange();
+	auto doc = new Document(input);
+	/*auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 
 		a.name == "object" && a.has("class") && 
 		(a["class"] == "GtkWindow")
@@ -287,4 +256,5 @@ void main() {
 
 	log();
 	createObjects(ofr, payLoad);
+	*/
 }
