@@ -229,16 +229,16 @@ unittest {
 version(XML_AA) {
 void insert(T,K,V)(ref T t, K k, V v) @trusted 
 		if(isAssociativeArray!T) {
-	t[k] = v;
+	t.attributes[k] = v;
 }
 
-bool contains(T,K)(ref T t, K k) @trusted nothrow 
+bool has(T,K)(ref T t, K k) @trusted nothrow 
 		if(isAssociativeArray!T) {
-	return (k in t) !is null;
+	return (k in t.attributes) !is null;
 }
 } else {
-bool contains(T,K)(ref T t, K k) @trusted nothrow  {
-	return t.contains(k);
+bool has(T,K)(ref T t, K k) @trusted nothrow  {
+	return t.attributes.contains(k);
 }
 
 void insert(T,K,V)(ref T t, K k, V v) @trusted {
@@ -312,7 +312,6 @@ private:
 				this.data.popFront();
 				return XmlTokenKind.Type;
 			} else if(this.data.length > 1 && this.data[$-2] == '/') {
-				this.data.popFront();
 				return XmlTokenKind.OpenClose;
 			} else {
 				return XmlTokenKind.Open;
@@ -515,8 +514,16 @@ unittest {
 }
 
 unittest {
+	string testString = "<hello/>";
+	auto r = xmlTokenRange(testString);
+	assert(r.front.kind == XmlTokenKind.OpenClose);
+	assert(r.front.name == "hello", "\"" ~ r.front.name ~ "\"");
+}
+
+unittest {
 	string testString = "</hello>";
 	auto r = xmlTokenRange(testString);
+	assert(r.front.kind == XmlTokenKind.Close);
 	assert(r.front.name == "hello", "\"" ~ r.front.name ~ "\"");
 }
 
