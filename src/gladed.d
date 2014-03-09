@@ -6,7 +6,6 @@ import std.array : appender, Appender;
 import std.range : drop;
 import std.format : formattedWrite, format;
 import std.uni : toUpper;
-import std.xml;
 
 import std.logger;
 
@@ -159,6 +158,10 @@ void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 					underscoreCap(curProperty), it.data == "True" ? "true" :
 					"false"
 				);
+			} else if(curProperty != "orientation") {
+				o.formattedWrite("\t\t%s.set%s(\"%s\");\n", objStack.top().obj,
+					underscoreCap(curProperty), it.data
+				);
 			}
 		}
 	}
@@ -178,39 +181,46 @@ string getBoxOrientation(IRange)(IRange i) {
 	assert(false);
 }
 
-void createObjects(ORange,IRange)(ref ORange o, IRange i) {
-	o.formattedWrite("\tthis() {\n");
+void createClass(ORange,IRange)(ref ORange o, IRange i, string gladeString) {
+	o.formattedWrite("\tstring __gladeString = `%s`;\n", gladeString);
+	o.put("\tBuilder __superSecretBuilder;\n");
 	foreach(it; i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
+			o.formattedWrite("\t%s %s;\n", it["class"][3 .. $], it["id"]);
+		}
+	}
+	o.put("\n");
+}
+
+void createObjects(ORange,IRange)(ref ORange o, IRange i) {
+	o.formattedWrite("\tthis() {\n");
+	o.put("\t\t__superSecretBuilder = new Builder();\n");
+	o.put("\t\t__superScretBuilder.addFromString(__gladeString);\n");
+	string box;
+	int second = 0;
+	foreach(it; i) {
+		if(it.kind == XmlTokenKind.Open && it.name == "object") {
+			++second;
+			if(second == 2) {
+				box = it.name;
+			}
 			assert(it.has("id"));
 			assert(it.has("class"));
-			if(it["class"] == "GtkBox") {
-				if(k == "vertical") {
-					o.formattedWrite("\t\tthis.%s = new %s();\n", it["id"], 
-						"VBox"
-					);
-				} else {
-					o.formattedWrite("\t\tthis.%s = new %s();\n", it["id"], 
-						"HBox"
-					);
-				}
-			}
-			o.formattedWrite("\t\tthis.%s = new %s();\n", it["id"], 
-				it["class"][3 .. $]
+			o.formattedWrite("\t\tthis.%s = cast(%s)__superScretBuilder." ~
+				"getObject(%s);\n", it["id"], it["class"][3 .. $], it["id"], 
 			);
 		}
 	}
-	o.formattedWrite("\n");
-	setupObjects(o, i);
+	o.formattedWrite("\t\tthis.add(%s);\n", box);
 	o.formattedWrite("\t}\n\n");
 	o.formattedWrite("}\n");
 }
 
+
 void main() {
 	LogManager.globalLogLevel = LogLevel.trace;
 	string input = cast(string)read("test1.glade");
-	auto doc = new Document(input);
-	/*auto tokenRange = input.xmlTokenRange();
+	auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 
 		a.name == "object" && a.has("class") && 
 		(a["class"] == "GtkWindow")
@@ -255,6 +265,6 @@ void main() {
 	);
 
 	log();
+	createClass(ofr, payLoad, input);
 	createObjects(ofr, payLoad);
-	*/
 }
