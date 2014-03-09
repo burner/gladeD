@@ -194,38 +194,43 @@ void createClass(ORange,IRange)(ref ORange o, IRange i, string gladeString) {
 
 void createObjects(ORange,IRange)(ref ORange o, IRange i) {
 	o.formattedWrite("\tthis() {\n");
+	o.put("\t\tsuper(\"\");\n");
 	o.put("\t\t__superSecretBuilder = new Builder();\n");
-	o.put("\t\t__superScretBuilder.addFromString(__gladeString);\n");
+	o.put("\t\t__superSecretBuilder.addFromString(__gladeString);\n");
 	string box;
 	int second = 0;
 	foreach(it; i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
 			++second;
-			if(second == 2) {
-				box = it.name;
-			}
 			assert(it.has("id"));
 			assert(it.has("class"));
-			o.formattedWrite("\t\tthis.%s = cast(%s)__superScretBuilder." ~
-				"getObject(%s);\n", it["id"], it["class"][3 .. $], it["id"], 
+			o.formattedWrite("\t\tthis.%s = cast(%s)__superSecretBuilder." ~
+				"getObject(\"%s\");\n", it["id"], it["class"][3 .. $], 
+				it["id"], 
 			);
+			if(second == 2) {
+				box = it["id"];
+				o.formattedWrite("\t\tthis.%s.reparent(this);\n", box);
+				o.formattedWrite("\t\tthis.add(%s);\n", box);
+			}
 		}
 	}
-	o.formattedWrite("\t\tthis.add(%s);\n", box);
 
 	connectHandler(o, i);
+	o.formattedWrite("\t\tshowAll();\n");
 	o.formattedWrite("\t}\n");
 }
 
 bool hasToggle(string s) {
-	return s == "GtkToggleButton" || s == "GtkCheckButton" || s == "GtkMenuButton";
+	return s == "GtkToggleButton" || s == "GtkCheckButton" || s ==
+		"GtkMenuButton" || s == "GtkMenuButton";
 }
 
 void connectHandler(ORange, IRange)(ref ORange o, IRange i) {
 	foreach(it; i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
 			if(it.has("class") && it["class"] == "GtkButton") {
-				o.formattedWrite("\t\tthis.%s.addOnClick(&this.%sDele);\n",
+				o.formattedWrite("\t\tthis.%s.addOnClicked(&this.%sDele);\n",
 					it["id"], it["id"]
 				);
 			} else if(it.has("class") && hasToggle(it["class"])) {
@@ -297,11 +302,14 @@ void main() {
 	foreach(it; usedTypes) {
 		ofr.formattedWrite("import gtk.%s;\n", it[3 .. $]);
 	}
+	ofr.formattedWrite("import gtk.%s;\n", clsType["class"][3 .. $]);
+	ofr.put("import gtk.Builder;\n");
+	ofr.put("import std.stdio;\n");
 
 	logF("%u ", clsType.attributes.length);
 
 	ofr.formattedWrite("\nabstract class %s : %s {\n", className,
-		clsType["class"]
+		clsType["class"][3 .. $]
 	);
 
 	log();
