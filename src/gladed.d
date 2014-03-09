@@ -212,10 +212,50 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i) {
 		}
 	}
 	o.formattedWrite("\t\tthis.add(%s);\n", box);
-	o.formattedWrite("\t}\n\n");
-	o.formattedWrite("}\n");
+
+	connectHandler(o, i);
+	o.formattedWrite("\t}\n");
 }
 
+bool hasToggle(string s) {
+	return s == "GtkToggleButton" || s == "GtkCheckButton" || s == "GtkMenuButton";
+}
+
+void connectHandler(ORange, IRange)(ref ORange o, IRange i) {
+	foreach(it; i) {
+		if(it.kind == XmlTokenKind.Open && it.name == "object") {
+			if(it.has("class") && it["class"] == "GtkButton") {
+				o.formattedWrite("\t\tthis.%s.addOnClick(&this.%sDele);\n",
+					it["id"], it["id"]
+				);
+			} else if(it.has("class") && hasToggle(it["class"])) {
+				o.formattedWrite("\t\tthis.%s.addOnToggle(&this.%sDele);\n",
+					it["id"], it["id"]
+				);
+			}
+		}
+	}
+}
+
+void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
+	foreach(it; i) {
+		if(it.kind == XmlTokenKind.Open && it.name == "object") {
+			if(it.has("class") && 
+					(it["class"] == "GtkButton" || hasToggle(it["class"]))) {
+				o.formattedWrite(
+					"\n\tvoid %sDele(%s sig) {\n\t\t%sHandler(sig);\n\t}\n",
+					it["id"], it["class"][3 .. $], it["id"]
+				);
+
+				o.formattedWrite(
+					"\n\tvoid %sHandler(%s sig) {\n\t\t" ~ 
+					"writeln(\"%sHandlerStub\");\n\t}\n",
+					it["id"], it["class"][3 .. $], it["id"], it["id"]
+				);
+			}
+		}
+	}
+}
 
 void main() {
 	LogManager.globalLogLevel = LogLevel.trace;
@@ -267,4 +307,6 @@ void main() {
 	log();
 	createClass(ofr, payLoad, input);
 	createObjects(ofr, payLoad);
+	createOnClickHandler(ofr, payLoad);
+	ofr.formattedWrite("}\n");
 }
