@@ -17,24 +17,27 @@ struct FashMap(K,V,const size_t cap = 64) {
 
 private:
 	size_t search(K key) const @trusted nothrow {
-		int imax = (this.length - cast(size_t)1);
-		int imin = 0;
-		while(imin <= imax) {
-			// calculate the midpoint for roughly equal partition
-			int imid = (imin + ((imax - imin) / 2));
-			if(data[cast(size_t)imid].key == key) {
-				// key found at index imid
-				return cast(size_t)imid; 
-			// determine which subarray to search
-			} else if(data[cast(size_t)imid].key < key) {
-				// change min index to search
-				// upper subarray
-				imin = imid + 1;
-			} else {
-				// change max index to
-				// search lower subarray
-				imax = imid - 1;
+		try {
+			int imax = to!(int)(this.length - cast(size_t)1);
+			int imin = 0;
+			while(imin <= imax) {
+				// calculate the midpoint for roughly equal partition
+				int imid = to!int(imin + ((imax - imin) / 2));
+				if(data[cast(size_t)imid].key == key) {
+					// key found at index imid
+					return cast(size_t)imid; 
+				// determine which subarray to search
+				} else if(data[cast(size_t)imid].key < key) {
+					// change min index to search
+					// upper subarray
+					imin = imid + 1;
+				} else {
+					// change max index to
+					// search lower subarray
+					imax = imid - 1;
+				}
 			}
+		} catch(Exception e) {
 		}
 		return size_t.max;
 	}
