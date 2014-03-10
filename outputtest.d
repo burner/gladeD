@@ -6,6 +6,10 @@ class MainWin : SomeClass {
 	this() {
 		super();
 	}
+
+	override void quitMenuEntryHandler(MenuItem) {
+		Main.quit();
+	}
 }
 
 void main(string[] args) {

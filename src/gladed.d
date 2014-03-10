@@ -226,6 +226,10 @@ bool hasToggle(string s) {
 		"GtkMenuButton" || s == "GtkMenuButton";
 }
 
+bool hasActivate(string s) {
+	return s == "GtkMenuItem" || s == "GtkImageMenuItem";
+}
+
 void connectHandler(ORange, IRange)(ref ORange o, IRange i) {
 	foreach(it; i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
@@ -237,8 +241,20 @@ void connectHandler(ORange, IRange)(ref ORange o, IRange i) {
 				o.formattedWrite("\t\tthis.%s.addOnToggle(&this.%sDele);\n",
 					it["id"], it["id"]
 				);
+			} else if(it.has("class") && hasActivate(it["class"])) {
+				o.formattedWrite("\t\tthis.%s.addOnActivate(&this.%sDele);\n",
+					it["id"], it["id"]
+				);
 			}
 		}
+	}
+}
+
+string processArgType(string arg) {
+	if(arg == "ImageMenuItem") {
+		return "MenuItem";
+	} else {
+		return arg;
 	}
 }
 
@@ -246,23 +262,26 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 	foreach(it; i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
 			if(it.has("class") && 
-					(it["class"] == "GtkButton" || hasToggle(it["class"]))) {
+					(it["class"] == "GtkButton" || 
+					 hasToggle(it["class"]) ||
+					 hasActivate(it["class"])))
+			{
 				o.formattedWrite(
 					"\n\tvoid %sDele(%s sig) {\n\t\t%sHandler(sig);\n\t}\n",
-					it["id"], it["class"][3 .. $], it["id"]
+					it["id"], processArgType(it["class"][3 .. $]), it["id"]
 				);
 
 				o.formattedWrite(
 					"\n\tvoid %sHandler(%s sig) {\n\t\t" ~ 
 					"writeln(\"%sHandlerStub\");\n\t}\n",
-					it["id"], it["class"][3 .. $], it["id"], it["id"]
+					it["id"], processArgType(it["class"][3 .. $]), it["id"], it["id"]
 				);
 			}
 		}
 	}
 }
 
-void main() {
+void main(string[] args) {
 	LogManager.globalLogLevel = LogLevel.trace;
 	string input = cast(string)read("test1.glade");
 	auto tokenRange = input.xmlTokenRange();
@@ -300,7 +319,7 @@ void main() {
 	auto names = elem.data.map!(a => a["class"]);
 	auto usedTypes = names.array.sort.uniq;
 	foreach(it; usedTypes) {
-		ofr.formattedWrite("import gtk.%s;\n", it[3 .. $]);
+		ofr.formattedWrite("public import gtk.%s;\n", it[3 .. $]);
 	}
 	ofr.formattedWrite("import gtk.%s;\n", clsType["class"][3 .. $]);
 	ofr.put("import gtk.Builder;\n");
