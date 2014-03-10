@@ -17,16 +17,16 @@ struct FashMap(K,V,const size_t cap = 64) {
 
 private:
 	size_t search(K key) const @trusted nothrow {
-		long imax = (this.length - cast(size_t)1);
-		long imin = 0;
+		int imax = (this.length - cast(size_t)1);
+		int imin = 0;
 		while(imin <= imax) {
 			// calculate the midpoint for roughly equal partition
-			long imid = imin + ((imax - imin) / 2);
-			if(data[imid].key == key) {
+			int imid = (imin + ((imax - imin) / 2));
+			if(data[cast(size_t)imid].key == key) {
 				// key found at index imid
 				return cast(size_t)imid; 
 			// determine which subarray to search
-			} else if(data[imid].key < key) {
+			} else if(data[cast(size_t)imid].key < key) {
 				// change min index to search
 				// upper subarray
 				imin = imid + 1;
