@@ -7,5 +7,5 @@ all: $(SRC)
 test: $(all)
 	./gladed -i test1.glade -o mwin.d -m mwin -c MWin
 	dmd outputtest.d mwin.d -I/usr/local/include/d/gtkd-2/ \
-		-L/usr/local/lib/libgtkd-2.a -L-ldl
+		-L/usr/local/lib/libgtkd-2.a -L-ldl -ofoutput
 	./output

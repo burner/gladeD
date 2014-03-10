@@ -8,6 +8,7 @@ class MainWin : MWin {
 	}
 
 	override void quitMenuEntryHandler(MenuItem) {
+		this.destroy();
 		Main.quit();
 	}
 }
