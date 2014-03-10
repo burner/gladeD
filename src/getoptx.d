@@ -1,17 +1,14 @@
-module getoptex;
+module getoptx;
 
 import std.stdio;
 import std.getopt;
 
-private import std.contracts;
+//private import std.contracts;
 private import std.typetuple;
 private import std.conv;
 
-bool getoptEx(T...)(string helphdr, ref string[] args, T opts)
+bool getoptX(T...)(string helphdr, ref string[] args, T opts)
 {
-    enforce(args.length,
-            "Invalid arguments string passed: program name missing");
-
     string helpMsg = GetoptHelp(opts); // extract all help strings
 
     bool helpPrinted = false; // state tells if called with "--help"

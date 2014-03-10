@@ -10,6 +10,7 @@ import std.uni : toUpper;
 import std.logger;
 
 import stack;
+import getoptx;
 import dropuntil;
 import xmltokenrange;
 
@@ -282,6 +283,13 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 void main(string[] args) {
+	string moduleName = "somemodule";
+	string className = "SomeClass";
+	string fileName = "";
+	getoptX("gladeD transforms .glade files into D Source files that make" ~
+		" gtkd fun to use", args,
+		"input|i", "The glade file you want to transform", &fileName);
+		
 	LogManager.globalLogLevel = LogLevel.trace;
 	string input = cast(string)read("test1.glade");
 	auto tokenRange = input.xmlTokenRange();
@@ -309,9 +317,6 @@ void main(string[] args) {
 
 	auto of = File("output.d", "w");
 	auto ofr = of.lockingTextWriter();
-
-	string moduleName = "somemodule";
-	string className = "SomeClass";
 
 	ofr.formattedWrite("module %s;\n\n", moduleName);
 	log();
