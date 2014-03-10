@@ -1,8 +1,8 @@
-import somemodule;
+import mwin;
 
 import gtk.Main;
 
-class MainWin : SomeClass {
+class MainWin : MWin {
 	this() {
 		super();
 	}

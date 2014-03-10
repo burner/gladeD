@@ -5,24 +5,24 @@ import std.getopt;
 
 //private import std.contracts;
 private import std.typetuple;
+private import std.typecons;
 private import std.conv;
 
-bool getoptX(T...)(string helphdr, ref string[] args, T opts)
+alias Tuple!(bool, "help", Option[], "options") GetOptRslt;
+
+GetOptRslt getoptX(T...)(ref string[] args, T opts)
 {
-    string helpMsg = GetoptHelp(opts); // extract all help strings
+    Option[] helpMsg = GetoptHelp(opts); // extract all help strings
 
     bool helpPrinted = false; // state tells if called with "--help"
 
-    void printHelp()
-    {
-        writeln("\n", helphdr, "\n", helpMsg,
-            "--help", "\n\tproduce help message");
-        helpPrinted = true;
-    }
+    getopt(args, GetoptEx!(opts), "help", &helpPrinted);
 
-    getopt(args, GetoptEx!(opts), "help", &printHelp);
+	GetOptRslt rslt;
+	rslt.help = helpPrinted;
+	rslt.options = helpMsg;
 
-    return helpPrinted;
+    return rslt;
 }
 
 private template GetoptEx(TList...)
@@ -46,7 +46,26 @@ private template GetoptEx(TList...)
     }
 }
 
-private string GetoptHelp(T...)(T opts)
+struct Option {
+	string op;
+	string msg;
+	bool end;
+
+	static Option opCall(string o, string h) {
+		Option ret;
+		ret.op = o;
+		ret.msg = h;
+		return ret;
+	}
+
+	static Option opCall() {
+		Option ret;
+		ret.end = true;
+		return ret;
+	}
+}
+
+private Option[] GetoptHelp(T...)(T opts)
 {
     static if (opts.length)
     {
@@ -61,11 +80,11 @@ private string GetoptHelp(T...)(T opts)
             string option  = to!(string)(opts[0]);
             string help    = to!(string)(opts[1]);
 
-            return( "--"~option~"\n"~help~"\n"~GetoptHelp(opts[3 .. $]) );
+            return([Option(option,help)]~GetoptHelp(opts[3 .. $]) );
         }
     }
     else
     {
-        return to!(string)("\n");
+        return [Option()];
     }
 }

@@ -108,9 +108,10 @@ void setupObjects(ORange,IRange)(ref ORange o, IRange i) {
 	Stack!Obj childStack;
 
 	foreach(it; i.drop(1)) {
-		infoF(false, "%s %s %s", it.kind, it.kind == XmlTokenKind.Open || it.kind ==
-			XmlTokenKind.Close || it.kind == XmlTokenKind.OpenClose ? 
-			it.name : "", !objStack.empty ? objStack.top().obj : ""
+		infoF(false, "%s %s %s", it.kind, it.kind == XmlTokenKind.Open || 
+			it.kind == XmlTokenKind.Close || 
+			it.kind == XmlTokenKind.OpenClose ?  it.name : "", 
+			!objStack.empty ? objStack.top().obj : ""
 		);
 
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
@@ -275,7 +276,8 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 				o.formattedWrite(
 					"\n\tvoid %sHandler(%s sig) {\n\t\t" ~ 
 					"writeln(\"%sHandlerStub\");\n\t}\n",
-					it["id"], processArgType(it["class"][3 .. $]), it["id"], it["id"]
+					it["id"], processArgType(it["class"][3 .. $]), it["id"], 
+					it["id"]
 				);
 			}
 		}
@@ -283,15 +285,35 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 void main(string[] args) {
+	LogManager.globalLogLevel = LogLevel.trace;
+	string helpmsg = "gladeD transforms glade files into D Source files that "
+		"make gtkd fun to use. Properly not all glade features will work." ~
+		"Dummy onClickHandler will be created for everything I know about." ~
+		"Check the example for, well an example.";
+
 	string moduleName = "somemodule";
 	string className = "SomeClass";
 	string fileName = "";
-	getoptX("gladeD transforms .glade files into D Source files that make" ~
-		" gtkd fun to use", args,
-		"input|i", "The glade file you want to transform", &fileName);
+	string output = "somemodule";
+	auto rslt = getoptX(args,
+		"input|i", "The glade file you want to transform", &fileName,
+		"output|o", "The file to write the resulting module to", &output,
+		"classname|c", "The name of the resulting class", &className,
+		"modulename|m", "The module name of the resulting file", &moduleName);
+
+	if(rslt.help) {
+		writeln(helpmsg);
+		writeln();
+		foreach(it; rslt.options) {
+			writefln("%15s %s", it.op, it.msg);
+		}
+	}
+
+	if(fileName.empty) {
+		return;
+	}
 		
-	LogManager.globalLogLevel = LogLevel.trace;
-	string input = cast(string)read("test1.glade");
+	string input = cast(string)read(fileName);
 	auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 
 		a.name == "object" && a.has("class") && 
@@ -313,9 +335,9 @@ void main(string[] args) {
 		logF("%s %s %s", it.name, it["class"], it["id"]);
 	}
 
-	log();
+	log(output);
 
-	auto of = File("output.d", "w");
+	auto of = File(output, "w");
 	auto ofr = of.lockingTextWriter();
 
 	ofr.formattedWrite("module %s;\n\n", moduleName);
