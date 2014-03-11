@@ -1,12 +1,11 @@
 module getoptx;
 
-import std.stdio;
-import std.getopt;
+public import std.getopt;
 
-//private import std.contracts;
-private import std.typetuple;
-private import std.typecons;
-private import std.conv;
+import std.typetuple;
+import std.typecons;
+import std.conv;
+import std.array : back, empty, split;
 
 alias Tuple!(bool, "help", Option[], "options") GetOptRslt;
 
@@ -16,7 +15,7 @@ GetOptRslt getoptX(T...)(ref string[] args, T opts)
 
     bool helpPrinted = false; // state tells if called with "--help"
 
-    getopt(args, GetoptEx!(opts), "help", &helpPrinted);
+    getopt(args, GetoptEx!(opts), "h|help", &helpPrinted);
 
 	GetOptRslt rslt;
 	rslt.help = helpPrinted;
@@ -46,24 +45,7 @@ private template GetoptEx(TList...)
     }
 }
 
-struct Option {
-	string op;
-	string msg;
-	bool end;
-
-	static Option opCall(string o, string h) {
-		Option ret;
-		ret.op = o;
-		ret.msg = h;
-		return ret;
-	}
-
-	static Option opCall() {
-		Option ret;
-		ret.end = true;
-		return ret;
-	}
-}
+alias Tuple!(string, "optShort", string, "optLong", string, "help") Option;
 
 private Option[] GetoptHelp(T...)(T opts)
 {
@@ -77,14 +59,70 @@ private Option[] GetoptHelp(T...)(T opts)
         else
         {
             // it's an option string
-            string option  = to!(string)(opts[0]);
-            string help    = to!(string)(opts[1]);
+			auto sp = split(opts[0], '|');
+			Option ret;
+			if (sp.length > 1) 
+			{
+				ret.optShort = "-" ~ (sp[0].length < sp[1].length ? 
+					sp[0] : sp[1]);
+				ret.optLong = "--" ~ (sp[0].length > sp[1].length ? 
+					sp[0] : sp[1]);
+			} 
+			else 
+			{
+				ret.optLong = "--" ~ sp[0];
+			}
+			ret.help = opts[1];
 
-            return([Option(option,help)]~GetoptHelp(opts[3 .. $]) );
+            return([ret]~GetoptHelp(opts[3 .. $]) );
         }
     }
     else
     {
-        return [Option()];
+		Option help;
+		help.optShort = "-h";
+		help.optLong = "--help";
+		help.help = "This help.";
+        return [help];
     }
+}
+
+void defaultGetoptPrinter(string text, Option[] opt) {
+	import std.stdio : write, writeln, writef, writefln;
+	import std.algorithm : min, max;
+
+	writeln(text);
+	writeln();
+	size_t ls, ll;
+	foreach(it; opt) {
+		ls = max(ls, it.optShort.length);	
+		ll = max(ll, it.optLong.length);	
+	}
+
+	size_t argLength = ls + ll + 2;
+	size_t rest = 79 - argLength;
+
+	foreach(it; opt) {
+		writef("%*s %*s ", ls, it.optShort, ll, it.optLong);
+		string helpMsg = it.help;
+		auto curLine = helpMsg[0 .. min($, rest)];
+		write(curLine);
+		helpMsg = helpMsg[min($, rest) .. $];
+		if(curLine.back != ' ' && !helpMsg.empty) {
+			writeln('-');
+		} else {
+			writeln();
+		}
+		while(!helpMsg.empty) {
+			curLine = helpMsg[0 .. min($, rest)];
+			helpMsg = helpMsg[min($, rest) .. $];
+			writef("%*s", argLength, " ");
+			write(curLine);
+			if(curLine.back != ' ' && !helpMsg.empty) {
+				writeln('-');
+			} else {
+				writeln();
+			}
+		}
+	}
 }

@@ -296,17 +296,21 @@ void main(string[] args) {
 	string fileName = "";
 	string output = "somemodule";
 	auto rslt = getoptX(args,
-		"input|i", "The glade file you want to transform", &fileName,
-		"output|o", "The file to write the resulting module to", &output,
-		"classname|c", "The name of the resulting class", &className,
-		"modulename|m", "The module name of the resulting file", &moduleName);
+		"input|i", "The glade file you want to transform. The inputfile must" ~
+		" be a valid glade file. Errors in the glade file will not be " ~
+		"detacted.", 
+			&fileName,
+		"output|o", "The file to write the resulting module to.", &output,
+		"classname|c", "The name of the resulting class.", &className,
+		"modulename|m", "The module name of the resulting file.", &moduleName);
 
 	if(rslt.help) {
-		writeln(helpmsg);
+		defaultGetoptPrinter(helpmsg, rslt.options);
+		/*writeln(helpmsg);
 		writeln();
 		foreach(it; rslt.options) {
-			writefln("%15s %s", it.op, it.msg);
-		}
+			writefln("%15s %15s %s", it.optShort, it.optLong, it.help);
+		}*/
 	}
 
 	if(fileName.empty) {

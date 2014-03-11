@@ -1,7 +1,7 @@
 SRC=$(wildcard src/*.d)
 all: $(SRC)
 	#dmd src/*.d -unittest -debug -g -ofgladed -version=XML_AA
-	dmd src/*.d -unittest -debug -g -ofgladed
+	dmd src/*.d -unittest -debug -gc -ofgladed
 	#./gladed
 
 test: $(all)
