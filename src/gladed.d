@@ -4,7 +4,8 @@ import std.file : read;
 import std.conv : to;
 import std.array : appender, Appender;
 import std.range : drop;
-import std.format : formattedWrite, format;
+//import std.format : format, formattedWrite;
+import std.format;
 import std.uni : toUpper;
 
 import std.logger;

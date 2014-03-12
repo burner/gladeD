@@ -4,6 +4,9 @@ all: $(SRC)
 	dmd src/*.d -unittest -debug -gc -ofgladed
 	#./gladed
 
+gdc: $(SRC)
+	gdc src/*.d -unittest -ggdb -o gladed
+
 test: $(all)
 	./gladed -i test1.glade -o mwin.d -m mwin -c MWin
 	dmd outputtest.d mwin.d -I/usr/local/include/d/gtkd-2/ \

@@ -9,7 +9,8 @@ import std.exception : enforce;
 import std.stdio : writeln, writefln;
 import std.uni : isWhite, isNumber;
 import std.range : isInputRange, lockstep;
-import std.format : format;
+//import std.format : format;
+//import std.format;
 import std.string : stripLeft, stripRight, indexOf, CaseSensitive, strip;
 import std.regex : ctRegex, match, regex, matchAll, popFrontN;
 import std.traits : isSomeChar, isAssociativeArray;
@@ -297,7 +298,9 @@ public:
 
 private:
 	XmlTokenKind getKind() {
-		assert(this.data.length, format("no data at line %u", this.line));
+		//import std.format : form = format;
+		//assert(this.data.length, form("no data at line %u", this.line));
+		assert(this.data.length);
 		if(this.data[0] != '<') {
 			return XmlTokenKind.Text;
 		} else if(this.data[0] == '<') {
@@ -347,6 +350,7 @@ private:
 	}
 
 	void readAttributes() {
+		//import std.format : form = format;
 		while(!this.data.empty) {
 			eatWhitespace(this.data);
 
@@ -364,7 +368,8 @@ private:
 		    try	{
 				key = eatKey(this.data);
 			} catch(Exception e) {
-				assert(false, format("unable to read key at line %u", this.line));
+				//assert(false, form("unable to read key at line %u", this.line));
+				assert(false);
 			}
 			eatWhitespace(this.data);
 			string attri = eatAttri(this.data);

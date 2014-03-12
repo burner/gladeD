@@ -5,7 +5,8 @@ public import std.getopt;
 import std.typetuple;
 import std.typecons;
 import std.conv;
-import std.array : back, empty, split;
+//import std.array : back, empty, split;
+import std.array;
 
 alias Tuple!(bool, "help", Option[], "options") GetOptRslt;
 
@@ -59,7 +60,7 @@ private Option[] GetoptHelp(T...)(T opts)
         else
         {
             // it's an option string
-			auto sp = split(opts[0], '|');
+			auto sp = split(opts[0], "|");
 			Option ret;
 			if (sp.length > 1) 
 			{
