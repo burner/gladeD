@@ -12,6 +12,8 @@ inspect the created file output.d.
 
 Example
 -------
+The following code shows how to use the CREATED_CLASS and how to override the
+handler for the quit menu entry in the file menu.
 
 ```d
 import CREATED_MODULE_CONTAINING_CREATED_CLASS;
