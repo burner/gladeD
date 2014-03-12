@@ -7,6 +7,9 @@ click and activate actions are created and connected. The created class can
 than be inherited and default action handler be overwritten. The handler are
 of the following schema. [NAME_OF_WIDGET]Handler([WIDGETTYPE);
 
+To get a feel for the created class, run the test target of the makefile and
+inspect the created file output.d.
+
 Example
 -------
 
