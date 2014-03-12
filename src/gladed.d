@@ -286,7 +286,7 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 void main(string[] args) {
-	LogManager.globalLogLevel = LogLevel.trace;
+	LogManager.globalLogLevel = LogLevel.fatal;
 	string helpmsg = "gladeD transforms glade files into D Source files that "
 		"make gtkd fun to use. Properly not all glade features will work." ~
 		"Dummy onClickHandler will be created for everything I know about." ~
@@ -337,16 +337,16 @@ void main(string[] args) {
 	foreach(ref XmlToken it; elem.data()) {
 		assert(it.has("id"));
 		assert(it.has("class"));
-		logF("%s %s %s", it.name, it["class"], it["id"]);
+		traceF("%s %s %s", it.name, it["class"], it["id"]);
 	}
 
-	log(output);
+	trace(output);
 
 	auto of = File(output, "w");
 	auto ofr = of.lockingTextWriter();
 
 	ofr.formattedWrite("module %s;\n\n", moduleName);
-	log();
+	trace();
 
 	auto names = elem.data.map!(a => a["class"]);
 	auto usedTypes = names.array.sort.uniq;
@@ -357,13 +357,13 @@ void main(string[] args) {
 	ofr.put("import gtk.Builder;\n");
 	ofr.put("import std.stdio;\n");
 
-	logF("%u ", clsType.attributes.length);
+	traceF("%u ", clsType.attributes.length);
 
 	ofr.formattedWrite("\nabstract class %s : %s {\n", className,
 		clsType["class"][3 .. $]
 	);
 
-	log();
+	trace();
 	createClass(ofr, payLoad, input);
 	createObjects(ofr, payLoad);
 	createOnClickHandler(ofr, payLoad);

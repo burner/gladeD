@@ -29,3 +29,16 @@ class MainWin : CREATED_CLASS {
 	}
 }
 ```
+
+Usage
+-----
+Running gladed --help should make things clear
+
+Known Bugs
+----------
+Properly many, feel free to add issues on github or to send pull request. It
+is only tested on Arch Linux x32/x64 with DMD 2.065 and gdc 2.064.
+
+License
+-------
+GPLk3
