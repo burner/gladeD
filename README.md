@@ -41,4 +41,4 @@ is only tested on Arch Linux x32/x64 with DMD 2.065 and gdc 2.064.
 
 License
 -------
-GPLk3
+GPL3
