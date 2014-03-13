@@ -1,3 +1,4 @@
+// Robert Burner Schadek rburners@gmail.com LGPL3
 module xmltokenrange;
 
 //import std.array : Appender, appender, front, empty, popFront;

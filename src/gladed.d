@@ -1,3 +1,4 @@
+// Robert Burner Schadek rburners@gmail.com LGPL3
 import std.algorithm : map, uniq, sort;
 import std.stdio : writeln, writefln, File;
 import std.file : read;

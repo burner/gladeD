@@ -1,3 +1,4 @@
+// Robert Burner Schadek rburners@gmail.com LGPL3
 module stack;
 
 struct Stack(T) {

@@ -1,3 +1,4 @@
+// Robert Burner Schadek rburners@gmail.com LGPL3
 module fixedsizehashmap;
 
 import std.algorithm : sort;
