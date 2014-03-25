@@ -295,7 +295,6 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 void main(string[] args) {
-	LogManager.globalLogLevel = LogLevel.trace;
 	string helpmsg = "gladeD transforms glade files into D Source files that "
 		"make gtkd fun to use. Properly not all glade features will work." ~
 		"Dummy onClickHandler will be created for everything I know about." ~
@@ -305,6 +304,7 @@ void main(string[] args) {
 	string className = "SomeClass";
 	string fileName = "";
 	string output = "somemodule";
+	LogLevel ll = LogLevel.fatal;
 	auto rslt = getoptX(args,
 		"input|i", "The glade file you want to transform. The inputfile must" ~
 		" be a valid glade file. Errors in the glade file will not be " ~
@@ -312,7 +312,9 @@ void main(string[] args) {
 			&fileName,
 		"output|o", "The file to write the resulting module to.", &output,
 		"classname|c", "The name of the resulting class.", &className,
-		"modulename|m", "The module name of the resulting file.", &moduleName);
+		"modulename|m", "The module name of the resulting file.", &moduleName,
+		"logLevel|l", "This option controles the LogLevel of the program. "
+		~ "See std.logger for more information.", &ll);
 
 	if(rslt.help) {
 		defaultGetoptPrinter(helpmsg, rslt.options);
@@ -321,6 +323,8 @@ void main(string[] args) {
 	if(fileName.empty) {
 		return;
 	}
+
+	LogManager.globalLogLevel = ll;
 		
 	string input = cast(string)read(fileName);
 	auto tokenRange = input.xmlTokenRange();
