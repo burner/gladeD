@@ -16,5 +16,11 @@ test: $(all)
 		-L/usr/local/lib/libgtkd-2.a -L-ldl -ofoutput
 	./output
 
+test2: $(all)
+	./gladed -i test2.glade -o tbox.d -m tbox -c TBox
+	dmd test2.d tbox.d -I/usr/local/include/d/gtkd-2/ \
+		-L/usr/local/lib/libgtkd-2.a -L-ldl -ofoutput2
+	./output2
+
 valgrind: $(gdc)
 	valgrind --tool=callgrind ./gladed -i test1.glade -o mwin.d -m mwin -c MWin

@@ -196,9 +196,13 @@ void createClass(ORange,IRange)(ref ORange o, IRange i, string gladeString) {
 	o.put("\n");
 }
 
-void createObjects(ORange,IRange)(ref ORange o, IRange i) {
+void createObjects(ORange,IRange)(ref ORange o, IRange i, bool isBox) {
 	o.formattedWrite("\tthis() {\n");
-	o.put("\t\tsuper(\"\");\n");
+	if(isBox) {
+		o.put("\t\tsuper(Orientation.HORIZONTAL, 0);\n");
+	} else {
+		o.put("\t\tsuper(\"\");\n");
+	}
 	o.put("\t\t__superSecretBuilder = new Builder();\n");
 	o.put("\t\t__superSecretBuilder.addFromString(__gladeString);\n");
 	string box;
@@ -212,7 +216,11 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i) {
 				"getObject(\"%s\");\n", it["id"], it["class"][3 .. $], 
 				it["id"], 
 			);
-			if(second == 2) {
+			if(second == 1 && it.has("class") && it["class"] == "GtkBox") {
+				box = it["id"];
+				o.formattedWrite("\t\tthis.add(%s);\n", box);
+				++second;
+			} else if(second == 2) {
 				box = it["id"];
 				o.formattedWrite("\t\tthis.%s.reparent(this);\n", box);
 				o.formattedWrite("\t\tthis.add(%s);\n", box);
@@ -287,7 +295,7 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 void main(string[] args) {
-	LogManager.globalLogLevel = LogLevel.fatal;
+	LogManager.globalLogLevel = LogLevel.trace;
 	string helpmsg = "gladeD transforms glade files into D Source files that "
 		"make gtkd fun to use. Properly not all glade features will work." ~
 		"Dummy onClickHandler will be created for everything I know about." ~
@@ -308,11 +316,6 @@ void main(string[] args) {
 
 	if(rslt.help) {
 		defaultGetoptPrinter(helpmsg, rslt.options);
-		/*writeln(helpmsg);
-		writeln();
-		foreach(it; rslt.options) {
-			writefln("%15s %15s %s", it.optShort, it.optLong, it.help);
-		}*/
 	}
 
 	if(fileName.empty) {
@@ -323,8 +326,10 @@ void main(string[] args) {
 	auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 
 		a.name == "object" && a.has("class") && 
-		(a["class"] == "GtkWindow")
+		(a["class"] == "GtkWindow" || a["class"] == "GtkBox")
 	);
+
+	bool isBox = payLoad.front["class"] == "GtkBox";
 
 	XmlToken clsType;
 	auto elem = appender!(XmlToken[])();
@@ -366,7 +371,7 @@ void main(string[] args) {
 
 	trace();
 	createClass(ofr, payLoad, input);
-	createObjects(ofr, payLoad);
+	createObjects(ofr, payLoad, isBox);
 	createOnClickHandler(ofr, payLoad);
 	ofr.formattedWrite("}\n");
 }
