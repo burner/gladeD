@@ -8,11 +8,11 @@ import std.range : drop;
 //import std.format : format, formattedWrite;
 import std.format;
 import std.uni : toUpper;
+import std.getopt;
 
-import std.logger;
+import std.experimental.logger;
 
 import stack;
-import getoptx;
 import dropuntil;
 import xmltokenrange;
 
@@ -305,7 +305,7 @@ void main(string[] args) {
 	string fileName = "";
 	string output = "somemodule";
 	LogLevel ll = LogLevel.fatal;
-	auto rslt = getoptX(args,
+	auto rslt = getopt(args,
 		"input|i", "The glade file you want to transform. The inputfile must" ~
 		" be a valid glade file. Errors in the glade file will not be " ~
 		"detacted.", 
@@ -316,7 +316,7 @@ void main(string[] args) {
 		"logLevel|l", "This option controles the LogLevel of the program. "
 		~ "See std.logger for more information.", &ll);
 
-	if(rslt.help) {
+	if(rslt.helpWanted) {
 		defaultGetoptPrinter(helpmsg, rslt.options);
 	}
 
@@ -324,7 +324,7 @@ void main(string[] args) {
 		return;
 	}
 
-	LogManager.globalLogLevel = ll;
+	globalLogLevel = ll;
 		
 	string input = cast(string)read(fileName);
 	auto tokenRange = input.xmlTokenRange();
@@ -347,7 +347,7 @@ void main(string[] args) {
 	foreach(ref XmlToken it; elem.data()) {
 		assert(it.has("id"));
 		assert(it.has("class"));
-		traceF("%s %s %s", it.name, it["class"], it["id"]);
+		tracef("%s %s %s", it.name, it["class"], it["id"]);
 	}
 
 	trace(output);
@@ -356,7 +356,7 @@ void main(string[] args) {
 	auto ofr = of.lockingTextWriter();
 
 	ofr.formattedWrite("module %s;\n\n", moduleName);
-	trace();
+	trace("After module name");
 
 	auto names = elem.data.map!(a => a["class"]);
 	auto usedTypes = names.array.sort.uniq;
@@ -367,13 +367,13 @@ void main(string[] args) {
 	ofr.put("import gtk.Builder;\n");
 	ofr.put("import std.stdio;\n");
 
-	traceF("%u ", clsType.attributes.length);
+	tracef("%u ", clsType.attributes.length);
 
 	ofr.formattedWrite("\nabstract class %s : %s {\n", className,
 		clsType["class"][3 .. $]
 	);
 
-	trace();
+	trace("Before create classes");
 	createClass(ofr, payLoad, input);
 	createObjects(ofr, payLoad, isBox);
 	createOnClickHandler(ofr, payLoad);

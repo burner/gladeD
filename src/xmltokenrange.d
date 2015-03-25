@@ -18,7 +18,7 @@ import std.traits : isSomeChar, isAssociativeArray;
 import std.functional : binaryFun;
 import std.algorithm : min;
 
-import std.logger;
+import std.experimental.logger;
 import fixedsizehashmap;
 
 ptrdiff_t stripLeftIdx(C)(C[] str) @safe pure 
@@ -394,7 +394,7 @@ public:
 
 	@property void input(InputRange i) {
 		input_ = i;
-		this.store_.clear();
+		this.store_ = appender!string();
 		this.readFromRange();
 	}
 
@@ -403,7 +403,7 @@ public:
 	}
 
 	@property void popFront() {
-		this.store_.clear();
+		this.store_ = appender!string();
 		readFromRange();
 	}
 
