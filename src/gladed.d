@@ -207,8 +207,10 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i, bool isBox) {
 	o.put("\t\t__superSecretBuilder.addFromString(__gladeString);\n");
 	string box;
 	int second = 0;
+	bool firstBox = false;
 	foreach(it; i) {
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
+			logf("%s %s", it["class"], second);
 			++second;
 			assert(it.has("id"));
 			assert(it.has("class"));
@@ -216,6 +218,7 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i, bool isBox) {
 				"getObject(\"%s\");\n", it["id"], it["class"][3 .. $], 
 				it["id"], 
 			);
+
 			if(second == 1 && it.has("class") && it["class"] == "GtkBox") {
 				box = it["id"];
 				o.formattedWrite("\t\tthis.add(%s);\n", box);
@@ -223,7 +226,7 @@ void createObjects(ORange,IRange)(ref ORange o, IRange i, bool isBox) {
 			} else if(second == 2) {
 				box = it["id"];
 				o.formattedWrite("\t\tthis.%s.reparent(this);\n", box);
-				o.formattedWrite("\t\tthis.add(%s);\n", box);
+				//o.formattedWrite("\t\tthis.add(%s);\n", box);
 			}
 		}
 	}
