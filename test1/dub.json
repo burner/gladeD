@@ -1,0 +1,12 @@
+{
+	"name": "test1",
+	"authors": [
+		"burner"
+	],
+	"dependencies": {
+		"gtk-d": "~>3.8.3"
+	},
+	"description": "A minimal D application.",
+	"copyright": "Copyright © 2018, burner",
+	"license": "proprietary"
+}

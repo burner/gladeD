@@ -10,9 +10,10 @@ gdc: $(SRC)
 ldc: $(SRC)
 	ldc2 src/*.d -unittest -g -ofgladed
 
-test:
-	./gladed -i test1.glade -o mwin.d -m mwin -c MWin
-	dmd outputtest.d mwin.d -L-ldl -ofoutput -I/usr/include/d/gtkd-3 -L-lgtkd-3
+test: $(all)
+	valgrind --tool=callgrind ./gladed -i test1.glade -o mwin.d -m mwin -c MWin
+	dmd outputtest.d mwin.d -I/usr/local/include/d/gtkd/ \
+		-L/usr/local/lib/libgtkd.a -L-ldl -ofoutput
 	./output
 
 test2: $(all)

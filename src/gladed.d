@@ -298,7 +298,7 @@ void createOnClickHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 void main(string[] args) {
-	string helpmsg = "gladeD transforms glade files into D Source files that "
+	string helpmsg = "gladeD transforms glade files into D Source files that " ~
 		"make gtkd fun to use. Properly not all glade features will work." ~
 		"Dummy onClickHandler will be created for everything I know about." ~
 		"Check the example for, well an example.";
