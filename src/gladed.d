@@ -196,12 +196,21 @@ void createClass(ORange,IRange)(ref ORange o, IRange i, string gladeString) {
 	o.put("\n");
 }
 
-void createObjects(ORange,IRange)(ref ORange o, IRange i, bool isBox) {
-	o.formattedWrite("\tthis() {\n");
-	if(isBox) {
-		o.put("\t\tsuper(Orientation.HORIZONTAL, 0);\n");
-	} else {
-		o.put("\t\tsuper(\"\");\n");
+void createObjects(ORange,IRange)(ref ORange o, IRange i, string top) {
+	switch (top) {
+		default:
+		case "GtkWindow":
+			o.formattedWrite("\tthis() {\n");
+			o.put("\t\tsuper(\"\");\n");
+			break;
+		case "GtkApplicationWindow":
+			o.formattedWrite("\tthis(Application app) {\n");
+			o.put("\t\tsuper(app);\n");
+			break;
+		case "GtkBox":
+			o.formattedWrite("\tthis() {\n");
+			o.put("\t\tsuper(Orientation.HORIZONTAL, 0);\n");
+			break;
 	}
 	o.put("\t\t__superSecretBuilder = new Builder();\n");
 	o.put("\t\t__superSecretBuilder.addFromString(__gladeString);\n");
@@ -247,13 +256,14 @@ bool hasActivate(string s) {
 
 void connectHandler(ORange, IRange)(ref ORange o, IRange i) {
 	foreach(it; i) {
+
 		if(it.kind == XmlTokenKind.Open && it.name == "object") {
 			if(it.has("class") && it["class"] == "GtkButton") {
 				o.formattedWrite("\t\tthis.%s.addOnClicked(&this.%sDele);\n",
 					it["id"], it["id"]
 				);
 			} else if(it.has("class") && hasToggle(it["class"])) {
-				o.formattedWrite("\t\tthis.%s.addOnToggle(&this.%sDele);\n",
+				o.formattedWrite("\t\tthis.%s.addOnToggled(&this.%sDele);\n",
 					it["id"], it["id"]
 				);
 			} else if(it.has("class") && hasActivate(it["class"])) {
@@ -266,10 +276,13 @@ void connectHandler(ORange, IRange)(ref ORange o, IRange i) {
 }
 
 string processArgType(string arg) {
-	if(arg == "ImageMenuItem") {
-		return "MenuItem";
-	} else {
-		return arg;
+	switch (arg) {
+		default:
+			return arg;
+		case "ImageMenuItem":
+			return "MenuItem";
+		case "CheckButton":
+			return "ToggleButton";
 	}
 }
 
@@ -327,16 +340,16 @@ void main(string[] args) {
 		return;
 	}
 
-	globalLogLevel = ll;
-		
+	globalLogLevel = 11;
+
 	string input = cast(string)read(fileName);
 	auto tokenRange = input.xmlTokenRange();
 	auto payLoad = tokenRange.dropUntil!(a => a.kind == XmlTokenKind.Open && 
 		a.name == "object" && a.has("class") && 
-		(a["class"] == "GtkWindow" || a["class"] == "GtkBox")
+		(a["class"] == "GtkWindow" || a["class"] == "GtkApplicationWindow" || a["class"] == "GtkBox")
 	);
 
-	bool isBox = payLoad.front["class"] == "GtkBox";
+	string top = payLoad.front["class"];
 
 	XmlToken clsType;
 	auto elem = appender!(XmlToken[])();
@@ -361,9 +374,16 @@ void main(string[] args) {
 	ofr.formattedWrite("module %s;\n\n", moduleName);
 	trace("After module name");
 
+	if (top == "GtkApplicationWindow")
+	{
+		ofr.put("import gio.Application: GioApplication = Application;\n");
+		ofr.put("import gtk.Application: Application;\n");
+	}
 	auto names = elem.data.map!(a => a["class"]);
 	auto usedTypes = names.array.sort.uniq;
 	foreach(it; usedTypes) {
+		if (it[3 .. $] == "CheckButton")
+			ofr.formattedWrite("public import gtk.ToggleButton;\n");
 		ofr.formattedWrite("public import gtk.%s;\n", it[3 .. $]);
 	}
 	ofr.formattedWrite("import gtk.%s;\n", clsType["class"][3 .. $]);
@@ -378,7 +398,7 @@ void main(string[] args) {
 
 	trace("Before create classes");
 	createClass(ofr, payLoad, input);
-	createObjects(ofr, payLoad, isBox);
+	createObjects(ofr, payLoad, top);
 	createOnClickHandler(ofr, payLoad);
 	ofr.formattedWrite("}\n");
 }
