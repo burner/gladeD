@@ -4,10 +4,10 @@ import std.stdio : writeln, writefln, File;
 import std.file : read;
 import std.conv : to;
 import std.array : appender, Appender;
-import std.range : drop;
+import std.range;
 //import std.format : format, formattedWrite;
 import std.format;
-import std.uni : toUpper;
+import std.uni;
 import std.getopt;
 
 import std.experimental.logger;
@@ -340,7 +340,7 @@ void main(string[] args) {
 		return;
 	}
 
-	globalLogLevel = 11;
+	globalLogLevel = ll;
 
 	string input = cast(string)read(fileName);
 	auto tokenRange = input.xmlTokenRange();
